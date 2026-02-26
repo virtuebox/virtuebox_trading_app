@@ -24,15 +24,27 @@ export interface EdgeTokenPayload extends JWTPayload {
 
 /**
  * Verify a JWT token in the Edge Runtime.
- * Returns the decoded payload, or null if the token is invalid/expired.
+ * Returns the decoded payload, or null if the token is invalid/expired/missing-secret.
+ *
+ * NOTE: JWT_SECRET MUST be set as an environment variable in Vercel (or any deployment).
+ * jose requires a secret of at least 32 characters for HS256.
+ * If JWT_SECRET is missing, ALL requests to protected routes will fail.
  */
 export async function verifyTokenEdge(
   token: string
 ): Promise<EdgeTokenPayload | null> {
-  try {
-    const secret = new TextEncoder().encode(
-      process.env.JWT_SECRET ?? ""
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret || jwtSecret.length < 32) {
+    console.error(
+      "[jwt.edge] JWT_SECRET is missing or too short (must be ≥32 chars). " +
+      "Add JWT_SECRET to your Vercel Environment Variables and redeploy."
     );
+    return null;
+  }
+
+  try {
+    const secret = new TextEncoder().encode(jwtSecret);
     const { payload } = await jwtVerify(token, secret);
     return payload as EdgeTokenPayload;
   } catch {
