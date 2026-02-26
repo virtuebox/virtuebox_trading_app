@@ -5,16 +5,25 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth.middleware";
-import { createPartner, getPartners } from "@/services/partner.service";
+import { requireAdmin, requireAuth } from "@/lib/auth.middleware";
+import { createPartner, getPartners, getPartnerById } from "@/services/partner.service";
 
 export async function GET(req: NextRequest) {
-  const result = await requireAdmin(req);
+  const result = requireAuth(req);
   if ("error" in result) return result.error;
 
   try {
-    const partners = await getPartners();
-    return NextResponse.json({ success: true, partners }, { status: 200 });
+    const role = result.payload.role;
+    let partners;
+    
+    if (role === "ADMIN") {
+      partners = await getPartners();
+    } else {
+      const partnerData = await getPartnerById(result.payload.userId);
+      partners = partnerData ? [partnerData] : [];
+    }
+    
+    return NextResponse.json({ success: true, partners, role }, { status: 200 });
   } catch (error) {
     console.error("[GET /api/partners]", error);
     return NextResponse.json(

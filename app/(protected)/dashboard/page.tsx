@@ -113,6 +113,7 @@ export default function DashboardPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Partner | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // Total backup balance — shown as merged cell (sum of all partners' backupBalance)
   const totalBackupBalance = partners.reduce((s, p) => s + (p.backupBalance ?? 0), 0);
@@ -123,7 +124,10 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/partners");
       const data = await res.json();
-      if (data.success) setPartners(data.partners);
+      if (data.success) {
+        setPartners(data.partners);
+        setUserRole(data.role);
+      }
     } catch {
       toast.error("Failed to load partners");
     } finally {
@@ -273,14 +277,16 @@ export default function DashboardPage() {
               <p className="text-gray-400 text-xs">www.virtuebox.com</p>
             </div>
           </div>
-          <Button
-            id="btn-add-partner"
-            onClick={openAdd}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm h-9"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Partner
-          </Button>
+          {userRole === "ADMIN" && (
+            <Button
+              id="btn-add-partner"
+              onClick={openAdd}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm h-9"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Partner
+            </Button>
+          )}
         </div>
       </div>
 
@@ -316,7 +322,9 @@ export default function DashboardPage() {
                 <TableHead className="font-bold text-gray-700 whitespace-nowrap">IC Market Accounts</TableHead>
                 <TableHead className="font-bold text-gray-700 whitespace-nowrap">Trading Agreement</TableHead>
                 <TableHead className="font-bold text-gray-700 whitespace-nowrap text-center">Status</TableHead>
-                <TableHead className="font-bold text-gray-700 whitespace-nowrap text-center">Actions</TableHead>
+                {userRole === "ADMIN" && (
+                  <TableHead className="font-bold text-gray-700 whitespace-nowrap text-center">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
 
@@ -374,37 +382,39 @@ export default function DashboardPage() {
                         {p.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <Button
-                          id={`btn-edit-${p._id}`}
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7"
-                          onClick={() => openEdit(p)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          id={`btn-toggle-${p._id}`}
-                          size="icon"
-                          variant={p.isActive ? "outline" : "outline"}
-                          className={`h-7 w-7 ${p.isActive ? "text-red-500 border-red-200 hover:bg-red-50" : "text-green-600 border-green-200 hover:bg-green-50"}`}
-                          onClick={() => toggleActive(p)}
-                          disabled={savingId === p._id}
-                          title={p.isActive ? "Deactivate" : "Activate"}
-                        >
-                          {savingId === p._id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : p.isActive ? (
-                            <PowerOff className="h-3.5 w-3.5" />
-                          ) : (
-                            <Power className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {userRole === "ADMIN" && (
+                      <TableCell className="text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            id={`btn-edit-${p._id}`}
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7"
+                            onClick={() => openEdit(p)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            id={`btn-toggle-${p._id}`}
+                            size="icon"
+                            variant={p.isActive ? "outline" : "outline"}
+                            className={`h-7 w-7 ${p.isActive ? "text-red-500 border-red-200 hover:bg-red-50" : "text-green-600 border-green-200 hover:bg-green-50"}`}
+                            onClick={() => toggleActive(p)}
+                            disabled={savingId === p._id}
+                            title={p.isActive ? "Deactivate" : "Activate"}
+                          >
+                            {savingId === p._id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : p.isActive ? (
+                              <PowerOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Power className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -426,7 +436,7 @@ export default function DashboardPage() {
                   <TableCell className="text-right bg-yellow-100 text-green-700">{fmt$(totalCurrentUSD)}</TableCell>
                   <TableCell className="text-right bg-yellow-100 text-green-700">{fmtINR(totalCurrentINR)}</TableCell>
                   <TableCell className="text-right bg-amber-100 text-amber-900 font-bold">{fmt$(totalBackupBalance)}</TableCell>
-                  <TableCell colSpan={4} />
+                  <TableCell colSpan={userRole === "ADMIN" ? 4 : 3} />
                 </TableRow>
               </TableFooter>
             )}
