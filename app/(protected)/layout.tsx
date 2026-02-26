@@ -14,7 +14,7 @@ export default function ProtectedLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <TopNav />
-      <main className="flex-1 container mx-auto px-6 py-8">
+      <main className="flex-1 w-full px-0 ">
         {children}
       </main>
     </div>

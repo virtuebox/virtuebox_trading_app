@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/auth.middleware";
 import { createPartner, getPartners } from "@/services/partner.service";
 
 export async function GET(req: NextRequest) {
-  const result = requireAdmin(req);
+  const result = await requireAdmin(req);
   if ("error" in result) return result.error;
 
   try {
@@ -25,12 +25,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const result = requireAdmin(req);
+  const result = await requireAdmin(req);
   if ("error" in result) return result.error;
 
   try {
     const body = await req.json();
-    const { name, email, password, mobile, isActive } = body;
+    const {
+      name, email, password, mobile, isActive,
+      deposit, sharePercent, feePercent,
+      startDate, endDate, icMarketAccount, tradingAgreement,
+    } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -46,24 +50,17 @@ export async function POST(req: NextRequest) {
       mobile,
       isActive: isActive ?? true,
       createdBy: result.payload.name,
+      deposit,
+      sharePercent,
+      feePercent,
+      startDate,
+      endDate,
+      icMarketAccount,
+      tradingAgreement,
     });
 
     return NextResponse.json(
-      {
-        success: true,
-        message: "Partner created successfully",
-        partner: {
-          id: partner._id.toString(),
-          name: partner.name,
-          email: partner.email,
-          mobile: partner.mobile,
-          partnerId: partner.partnerId,
-          isActive: partner.isActive,
-          role: partner.role,
-          createdBy: partner.createdBy,
-          createdAt: partner.createdAt,
-        },
-      },
+      { success: true, message: "Partner created successfully", partner },
       { status: 201 }
     );
   } catch (error) {
