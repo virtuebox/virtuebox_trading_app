@@ -51,12 +51,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Sign JWT token
+    // Sign JWT token — include partnerId so /api/auth/me can return it without a DB lookup
     const token = signToken({
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
       name: user.name,
+      ...(user.partnerId ? { partnerId: user.partnerId } : {}),
     });
 
     // Build response with user info (never expose password)

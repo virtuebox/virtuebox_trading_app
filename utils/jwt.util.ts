@@ -18,6 +18,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   name: string;
+  partnerId?: string; // Only present for PARTNER role users
 }
 
 /**
