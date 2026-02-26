@@ -64,8 +64,11 @@ export default function LoginPage() {
       }
 
       toast.success("Login successful! Redirecting…");
-      router.push("/dashboard");
-      router.refresh();
+      // window.location.href performs a full browser navigation (hard redirect).
+      // This ensures the browser sends a fresh HTTP request to /dashboard
+      // with the JWT cookie attached, so the middleware can verify it correctly.
+      // Using router.push (soft nav) in Next.js 16 can bypass cookie re-evaluation.
+      window.location.href = "/dashboard";
     } catch {
       form.setError("root", {
         message: "Network error. Please try again.",

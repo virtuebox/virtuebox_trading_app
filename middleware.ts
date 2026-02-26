@@ -1,12 +1,16 @@
 /**
  * middleware.ts
- * Next.js root middleware for route protection.
+ * Next.js Middleware (Edge Runtime) for route protection.
  * Protects /dashboard and /partners — requires valid JWT cookie.
  * PARTNERs attempting /partners are redirected to /dashboard.
+ *
+ * IMPORTANT: Imports from jwt.EDGE.ts (jose), NOT jwt.util.ts (jsonwebtoken).
+ * jsonwebtoken uses Node.js crypto APIs that do NOT exist in Edge Runtime.
+ * jose uses Web Crypto APIs and works in both Edge and Node runtimes.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/utils/jwt.util";
+import { verifyTokenEdge } from "@/utils/jwt.edge";
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/dashboard", "/partners"];
@@ -14,19 +18,19 @@ const PROTECTED_ROUTES = ["/dashboard", "/partners"];
 // Routes that require ADMIN role
 const ADMIN_ROUTES = ["/partners"];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Check if route requires protection
+  // Check if this route requires protection
   const isProtected = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
 
   if (!isProtected) return NextResponse.next();
 
-  // Get and verify JWT from HTTP-only cookie
+  // Read and verify JWT from HTTP-only cookie
   const token = req.cookies.get("token")?.value;
-  const payload = token ? verifyToken(token) : null;
+  const payload = token ? await verifyTokenEdge(token) : null;
 
   if (!payload) {
     // Not authenticated — redirect to login
